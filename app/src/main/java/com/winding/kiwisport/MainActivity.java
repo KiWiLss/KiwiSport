@@ -1,21 +1,29 @@
 package com.winding.kiwisport;
 
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.amap.api.maps.AMap;
+import com.amap.api.maps.AMapOptions;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
+import com.amap.api.maps.UiSettings;
+import com.amap.api.maps.model.BitmapDescriptorFactory;
 import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.Marker;
+import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.winding.kiwisport.utils.Utils;
 
@@ -40,10 +48,111 @@ public class MainActivity extends AppCompatActivity {
         mMap = mMapView.getMap();
 
         //mMap.showIndoorMap(true);//开启室内地图
+
+
         //初始化定位
         initLocation();
         Log.e(TAG, "onCreate: sahn1=="+ Utils.sHA1(this));
+        initBigSmall();
+        //绘制点标记
+        initMarker();
+    }
 
+    private void initMarker() {
+
+        //添加默认的标记点
+        LatLng latLng = new LatLng(30.220342,120.270377);
+//         Marker marker = mMap.addMarker(new MarkerOptions().position(latLng).title("杭州市").snippet("DefaultMarker"));
+        //添加自定义标记点
+        MarkerOptions markerOption = new MarkerOptions();
+        markerOption.position(latLng);
+        markerOption.title("杭州市").snippet("杭州市：34.341568, 108.940174");
+
+        markerOption.draggable(true);//设置Marker可拖动
+        markerOption.icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory
+                .decodeResource(getResources(),R.mipmap.dinggan)));
+        // 将Marker设置为贴地显示，可以双指下拉地图查看效果
+        markerOption.setFlat(true);//设置marker平贴地图效果
+
+        mMap.addMarker(markerOption);
+
+        // 绑定 Marker 被点击事件
+        mMap.setOnMarkerClickListener(new AMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                return false;
+            }
+        });
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        int widthPixels = dm.widthPixels;
+        int heightPixels = dm.heightPixels;
+        Marker marker = mMap.addMarker(new MarkerOptions()
+
+                .setFlat(false)
+                .title("标记点").snippet("测试标记点")
+                .icon(BitmapDescriptorFactory.fromBitmap
+                        (BitmapFactory.decodeResource(getResources(), R.mipmap.dinggan)))
+                .draggable(false));
+        marker.setPositionByPixels(widthPixels / 2, heightPixels / 2);//标记点添加到屏幕中间
+    //绘制 InfoWindow
+//       mMap.setInfoWindowAdapter(new AMap.InfoWindowAdapter() {
+//           @Override
+//           public View getInfoWindow(Marker marker) {//当实现此方法并返回有效值时（返回值不为空，则视为有效）
+//               return null;
+//           }
+//
+//           @Override
+//           public View getInfoContents(Marker marker) {//此方法和 getInfoWindow（Marker marker） 方法的实质是一样的
+//               return null;
+//           }
+//       });
+
+        //InfoWindow 点击事件
+        mMap.setOnInfoWindowClickListener(new AMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+
+                Toast.makeText(MainActivity.this, "点击了infowindow", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+
+    }
+
+
+
+    /**
+     * 一些简单的设置
+     */
+    private void initBigSmall() {
+        UiSettings uiSettings = mMap.getUiSettings();
+        //隐藏右下角放大,缩小
+        uiSettings.setZoomControlsEnabled(false);
+        //设置指南针是否显示
+        uiSettings.setCompassEnabled(false);
+
+
+        //定位按钮影响当前位置图标
+        /*uiSettings.setMyLocationButtonEnabled(true); //显示默认的定位按钮
+
+       // mMap.setMyLocationEnabled(true);// 可触发定位并显示当前位置
+
+        mMap.setLocationSource(new LocationSource() {
+            @Override
+            public void activate(OnLocationChangedListener onLocationChangedListener) {//激活
+                Log.e(TAG, "activate: " );
+            }
+
+            @Override
+            public void deactivate() {//停用
+                Log.e(TAG, "deactivate: " );
+            }
+        });//通过aMap对象设置定位数据源的监听*/
+
+
+
+        uiSettings.setLogoPosition(AMapOptions.LOGO_POSITION_BOTTOM_LEFT);//设置logo位置
     }
 
     /**
