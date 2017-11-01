@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.winding.kiwisport.MainActivity">
+
+   <EditText
+       android:id="@+id/et_input"
+       android:layout_width="match_parent"
+       android:layout_height="45dp"
+       android:background="#fff"
+       android:layout_marginLeft="8dp"
+       app:layout_constraintLeft_toLeftOf="parent"
+       android:layout_marginRight="8dp"
+       app:layout_constraintRight_toRightOf="parent"
+       app:layout_constraintTop_toTopOf="parent"
+       android:layout_marginTop="8dp"
+       android:hint="搜索"/>
+
+    <com.amap.api.maps.MapView
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="45dp"/>
+</android.support.constraint.ConstraintLayout>
