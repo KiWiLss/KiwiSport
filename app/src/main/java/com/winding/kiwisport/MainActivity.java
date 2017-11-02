@@ -8,13 +8,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSON;
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
@@ -32,6 +36,15 @@ import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.Polyline;
 import com.amap.api.maps.model.PolylineOptions;
+import com.amap.api.services.core.AMapException;
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.core.PoiItem;
+import com.amap.api.services.core.SuggestionCity;
+import com.amap.api.services.help.Inputtips;
+import com.amap.api.services.help.InputtipsQuery;
+import com.amap.api.services.help.Tip;
+import com.amap.api.services.poisearch.PoiResult;
+import com.amap.api.services.poisearch.PoiSearch;
 import com.winding.kiwisport.utils.Utils;
 
 import java.util.ArrayList;
@@ -44,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEtInput;
     private AMap mMap;
     private ArrayList<Marker> mMarkerList;
+    private ListView mLv;
+    private double mLatitude;
+    private double mLongitude;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +68,9 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         mEtInput = (EditText) findViewById(R.id.et_input);
+
+        mLv = (ListView) findViewById(R.id.lv_list);
+
         //获取地图控件引用
         mMapView = (MapView) findViewById(R.id.map);
         //在activity执行onCreate时执行mMapView.onCreate(savedInstanceState)，创建地图
@@ -74,13 +93,140 @@ public class MainActivity extends AppCompatActivity {
         drawOneLine();
         //输入内容搜索
         initSearchListener();
+        //输入提示列表单一点击监听
+        itemClickListener();
     }
+
+    private void itemClickListener() {
+        mLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Log.e(TAG, "onItemClick: "+i+"|||"+l );
+                String poiID = mTipList.get(i).getPoiID();
+                //用id进行搜索
+                PoiSearch poiSearch = new PoiSearch(MainActivity.this, null);
+                poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+                    @Override
+                    public void onPoiSearched(PoiResult poiResult, int i) {
+
+                    }
+
+                    @Override
+                    public void onPoiItemSearched(PoiItem poiItem, int i) {
+                        //获取PoiItem获取POI的详细信息
+                        if (i == AMapException.CODE_AMAP_SUCCESS&&poiItem!=null) {//正确返回
+                            Log.e(TAG, "onPoiItemSearched: *****"+JSON.toJSONString(poiItem) );
+                            mLv.setVisibility(View.GONE);
+
+                            //mMap.clear();// 清理之前的图标
+                            LatLng latLng = new LatLng(poiItem.getEnter().getLatitude(), poiItem.getEnter().getLongitude());
+                            Marker marker = mMap.addMarker(new MarkerOptions().position(latLng)
+                                    .icon(BitmapDescriptorFactory.fromBitmap
+                                            (BitmapFactory.decodeResource(getResources(), R.mipmap.big_blue_landmark))));
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f));
+
+                        }
+                    }
+                });
+                poiSearch.searchPOIIdAsyn(poiID);// 异步搜索
+
+            }
+        });
+    }
+
 
     private void initSearchListener() {
 
+        mEtInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+
+                String content = mEtInput.getText().toString();
+                Log.e(TAG, "onEditorAction: "+content+"|||"+keyEvent.getAction() +"actionId"+i);
+
+                if (!TextUtils.isEmpty(content)) {
+                    //开始poi搜索,市搜索
+                    startSearchCountry(content);
+                    autoSearch2(content);
+                }
+                return false;
+            }
+        });
+
+
+    }
+    ArrayList<Tip> mTipList = new ArrayList<>();
+    private void autoSearch2(String content) {
+        //第二个参数传入null或者“”代表在全国进行检索，否则按照传入的city进行检索
+        InputtipsQuery inputquery = new InputtipsQuery(content, mCurrentCity);
+        inputquery.setCityLimit(true);//限制在当前城市
+        Inputtips inputTips = new Inputtips(MainActivity.this, inputquery);
+        inputTips.setInputtipsListener(new Inputtips.InputtipsListener() {
+            @Override
+            public void onGetInputtips(List<Tip> list, int i) {//搜索内容回调结果
+                Log.e(TAG, "onGetInputtips: "+list.size()+"||"+JSON.toJSONString(list));
+                if (i == 1000 && list!= null) {//正确的返回
+                    mLv.setVisibility(View.VISIBLE);
+                    mTipList.clear();
+                    mTipList.addAll(list);
+                    SearchAdapter adapter = new SearchAdapter(MainActivity.this, list);
+                    mLv.setAdapter(adapter);
+                }
 
 
 
+
+
+            }
+        });
+        inputTips.requestInputtipsAsyn();
+
+    }
+
+    /**杭州市poi搜索
+     * @param
+     */
+    PoiOverlay mPoiOverlay;
+    private void startSearchCountry(String content) {
+        PoiSearch.Query query = new PoiSearch.Query(content, "", mCurrentCity);
+//keyWord表示搜索字符串，
+//第二个参数表示POI搜索类型，二者选填其一，选用POI搜索类型时建议填写类型代码，码表可以参考下方（而非文字）
+//cityCode表示POI搜索区域，可以是城市编码也可以是城市名称，也可以传空字符串，空字符串代表全国在全国范围内进行搜索
+        query.setPageSize(20);// 设置每页最多返回多少条poiitem
+        query.setPageNum(0);//设置查询页码
+        //设置搜索结果监听
+        PoiSearch poiSearch = new PoiSearch(this, query);
+        poiSearch.setOnPoiSearchListener(new PoiSearch.OnPoiSearchListener() {
+            @Override
+            public void onPoiSearched(PoiResult poiResult, int i) {//i=1000,代表成功,其他为失败
+                //搜索的全部结果
+                ArrayList<PoiItem> pois = poiResult.getPois();
+                Log.e(TAG, "onPoiSearched: pois--->" +pois.size()+"|||"+ JSON.toJSONString(pois));
+                List<SuggestionCity> cityList = poiResult.getSearchSuggestionCitys();
+                Log.e(TAG, "onPoiSearched: city--->"+JSON.toJSONString(cityList) );
+
+
+                /*mMap.clear();// 清理之前的图标
+                //展示搜索到的点
+                 mPoiOverlay = new PoiOverlay(getContext(), mMap, pois, getResources());
+                mPoiOverlay.removeFromMap();
+                mPoiOverlay.addToMap();
+
+                mPoiOverlay.zoomToSpan();*/
+
+
+            }
+
+            @Override
+            public void onPoiItemSearched(PoiItem poiItem, int i) {
+                Log.e(TAG, "onPoiItemSearched: "+JSON.toJSONString(poiItem) );
+
+
+            }
+        });
+        LatLonPoint lp = new LatLonPoint(mLatitude, mLongitude);
+        poiSearch.setBound(new PoiSearch.SearchBound(lp, 3000));//设置周边搜索的中心点以及半径
+        poiSearch.searchPOIAsyn();
     }
 
     private void drawOneLine() {
@@ -113,6 +259,9 @@ public class MainActivity extends AppCompatActivity {
                         m.hideInfoWindow();
                     }
                 }
+                if (mPoiOverlay!=null){
+                    mPoiOverlay.removeFromMap();
+                }
             }
         });
 
@@ -129,6 +278,7 @@ public class MainActivity extends AppCompatActivity {
                         m.hideInfoWindow();
                     }
                 }
+
             }
 
             @Override
@@ -252,6 +402,8 @@ public class MainActivity extends AppCompatActivity {
         uiSettings.setLogoPosition(AMapOptions.LOGO_POSITION_BOTTOM_LEFT);//设置logo位置
     }
 
+
+
     /**
      * 初始化定位
      */
@@ -260,6 +412,7 @@ public class MainActivity extends AppCompatActivity {
     boolean isFirst=true;//表示是否是首次进入
     //声明AMapLocationClient类对象
     public AMapLocationClient mLocationClient = null;
+    private String mCurrentCity;
     //声明定位回调监听器
     public AMapLocationListener mLocationListener = new AMapLocationListener() {
         @Override
@@ -269,9 +422,15 @@ public class MainActivity extends AppCompatActivity {
                 //可在其中解析amapLocation获取相应内容。
                     double latitude = aMapLocation.getLatitude();
                     double longitude = aMapLocation.getLongitude();
+
+                    mLatitude=latitude;
+                    mLongitude=longitude;
+
+
                     String city = aMapLocation.getCity();
+                    mCurrentCity=city;
                     Log.e(TAG, "onLocationChanged: "+latitude+"longitude="+longitude+"city="+city+"||"+isFirst);
-                    //mLocationClient.stopLocation();//停止定位后，本地定位服务并不会被销毁
+                    mLocationClient.stopLocation();//停止定位后，本地定位服务并不会被销毁
 
                     if (isFirst){//首次进入移动地图到地位点
                         //设置缩放级别
