@@ -5,10 +5,14 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
@@ -21,11 +25,17 @@ import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.UiSettings;
 import com.amap.api.maps.model.BitmapDescriptorFactory;
+import com.amap.api.maps.model.CameraPosition;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
+import com.amap.api.maps.model.Polyline;
+import com.amap.api.maps.model.PolylineOptions;
 import com.winding.kiwisport.utils.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private MapView mMapView;
     private EditText mEtInput;
     private AMap mMap;
+    private ArrayList<Marker> mMarkerList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,15 +60,86 @@ public class MainActivity extends AppCompatActivity {
 
         //mMap.showIndoorMap(true);//开启室内地图
 
-
+        //收集所有的marker
+        mMarkerList = new ArrayList<>();
         //初始化定位
         initLocation();
         Log.e(TAG, "onCreate: sahn1=="+ Utils.sHA1(this));
         initBigSmall();
         //绘制点标记
         initMarker();
+        //对地图点击监听,移动监听
+        initMapClickListener();
+        //在地图上绘制一条线
+        drawOneLine();
+        //输入内容搜索
+        initSearchListener();
     }
 
+    private void initSearchListener() {
+
+
+
+
+    }
+
+    private void drawOneLine() {
+        List<LatLng> latLngs = new ArrayList<LatLng>();
+        latLngs.add(new LatLng(30.220356,120.270379));
+        latLngs.add(new LatLng(35.220356,110.270379));
+        latLngs.add(new LatLng(39.898323,116.057694));
+
+        Polyline polyline = mMap.addPolyline(new PolylineOptions().
+                addAll(latLngs).width(10).color(ContextCompat.getColor(this,R.color.green)));
+        //可通过polyline设置属性
+        //polyline.setVisible(true);
+    }
+
+    Marker mCustomMarke;
+
+    private void initMapClickListener() {
+        //对地图点击监听
+        mMap.setOnMapClickListener(new AMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                Toast.makeText(MainActivity.this, "点击了地图", Toast.LENGTH_SHORT).show();
+                //infowindow消失
+                //mInfoWindowView.setVisibility(View.GONE);//无效
+                //mCustomMarke.hideInfoWindow();对应的marker才有效
+                for (Marker m :
+                        mMarkerList) {
+                    Log.e(TAG, "onMapClick: "+m.isInfoWindowShown() );
+                    if (m.isInfoWindowShown()) {
+                        m.hideInfoWindow();
+                    }
+                }
+            }
+        });
+
+        //设置地图移动监听
+        mMap.setOnCameraChangeListener(new AMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition cameraPosition) {
+                Toast.makeText(MainActivity.this, "地图正在移动", Toast.LENGTH_SHORT).show();
+                //infowindow消失
+                //mInfoWindowView.setVisibility(View.GONE);
+                for (Marker m :
+                        mMarkerList) {
+                    if (m.isInfoWindowShown()) {
+                        m.hideInfoWindow();
+                    }
+                }
+            }
+
+            @Override
+            public void onCameraChangeFinish(CameraPosition cameraPosition) {
+                Toast.makeText(MainActivity.this, "地图移动完成", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+    }
+    View mInfoWindowView;
     private void initMarker() {
 
         //添加默认的标记点
@@ -74,39 +156,47 @@ public class MainActivity extends AppCompatActivity {
         // 将Marker设置为贴地显示，可以双指下拉地图查看效果
         markerOption.setFlat(true);//设置marker平贴地图效果
 
-        mMap.addMarker(markerOption);
+        Marker marker1 = mMap.addMarker(markerOption);
 
-        // 绑定 Marker 被点击事件
-        mMap.setOnMarkerClickListener(new AMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                return false;
-            }
-        });
+
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
         int widthPixels = dm.widthPixels;
         int heightPixels = dm.heightPixels;
         Marker marker = mMap.addMarker(new MarkerOptions()
-
                 .setFlat(false)
                 .title("标记点").snippet("测试标记点")
                 .icon(BitmapDescriptorFactory.fromBitmap
                         (BitmapFactory.decodeResource(getResources(), R.mipmap.dinggan)))
                 .draggable(false));
         marker.setPositionByPixels(widthPixels / 2, heightPixels / 2);//标记点添加到屏幕中间
-    //绘制 InfoWindow
-//       mMap.setInfoWindowAdapter(new AMap.InfoWindowAdapter() {
-//           @Override
-//           public View getInfoWindow(Marker marker) {//当实现此方法并返回有效值时（返回值不为空，则视为有效）
-//               return null;
-//           }
-//
-//           @Override
-//           public View getInfoContents(Marker marker) {//此方法和 getInfoWindow（Marker marker） 方法的实质是一样的
-//               return null;
-//           }
-//       });
+
+        mCustomMarke=marker;
+        mMarkerList.add(marker1);
+        mMarkerList.add(marker);
+        //绘制 InfoWindow
+       mMap.setInfoWindowAdapter(new AMap.InfoWindowAdapter() {
+           @Override
+           public View getInfoWindow(Marker marker) {//当实现此方法并返回有效值时（返回值不为空，则视为有效）
+               //写个自定义的infoWindow
+               mInfoWindowView = LayoutInflater.from(MainActivity.this).inflate(R.layout.info_window, null);
+               TextView tvTitle = mInfoWindowView.findViewById(R.id.tv_info_title);
+               TextView tvContent = mInfoWindowView.findViewById(R.id.tv_info_content);
+                if (TextUtils.isEmpty(marker.getTitle())){
+                    return null;
+                }
+               tvTitle.setText(marker.getTitle());
+               tvContent.setText(marker.getSnippet());
+
+               //marker.hideInfoWindow();//隐藏infowindow
+               return mInfoWindowView;
+           }
+
+           @Override
+           public View getInfoContents(Marker marker) {//此方法和 getInfoWindow（Marker marker） 方法的实质是一样的
+               return null;
+           }
+       });
 
         //InfoWindow 点击事件
         mMap.setOnInfoWindowClickListener(new AMap.OnInfoWindowClickListener() {
@@ -117,7 +207,14 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
+        // 绑定 Marker 被点击事件
+        mMap.setOnMarkerClickListener(new AMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                Toast.makeText(MainActivity.this, "marker被点击", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
     }
 
 
@@ -194,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                         myLocationStyle.radiusFillColor(FILL_COLOR);
                         //设置定位蓝点精度圈的边框宽度的方法。
                         myLocationStyle.strokeWidth(10);
-                        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_SHOW);//只定位一次。
+                        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER);////连续定位、蓝点不会移动到地图中心点，定位点依照设备方向旋转，并且蓝点会跟随设备移动。
                         //设置自定义图标
 //                        BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap
 //                                (BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
