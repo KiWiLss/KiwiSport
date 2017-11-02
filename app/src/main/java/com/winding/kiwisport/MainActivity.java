@@ -45,6 +45,12 @@ import com.amap.api.services.help.InputtipsQuery;
 import com.amap.api.services.help.Tip;
 import com.amap.api.services.poisearch.PoiResult;
 import com.amap.api.services.poisearch.PoiSearch;
+import com.amap.api.services.route.BusRouteResult;
+import com.amap.api.services.route.DrivePath;
+import com.amap.api.services.route.DriveRouteResult;
+import com.amap.api.services.route.RideRouteResult;
+import com.amap.api.services.route.RouteSearch;
+import com.amap.api.services.route.WalkRouteResult;
 import com.winding.kiwisport.utils.Utils;
 
 import java.util.ArrayList;
@@ -60,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private ListView mLv;
     private double mLatitude;
     private double mLongitude;
+    private int mTap;//区分点击的是哪种类型的图标
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
         itemClickListener();
     }
 
+    Marker mSingeMarke;//单独搜索的Marker
     private void itemClickListener() {
         mLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -117,10 +125,11 @@ public class MainActivity extends AppCompatActivity {
                         if (i == AMapException.CODE_AMAP_SUCCESS&&poiItem!=null) {//正确返回
                             Log.e(TAG, "onPoiItemSearched: *****"+JSON.toJSONString(poiItem) );
                             mLv.setVisibility(View.GONE);
-
+                            mTap=3;
                             //mMap.clear();// 清理之前的图标
                             LatLng latLng = new LatLng(poiItem.getEnter().getLatitude(), poiItem.getEnter().getLongitude());
-                            Marker marker = mMap.addMarker(new MarkerOptions().position(latLng)
+                            //mSingeMarke.remove();
+                            mSingeMarke = mMap.addMarker(new MarkerOptions().position(latLng)
                                     .icon(BitmapDescriptorFactory.fromBitmap
                                             (BitmapFactory.decodeResource(getResources(), R.mipmap.big_blue_landmark))));
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f));
@@ -259,9 +268,14 @@ public class MainActivity extends AppCompatActivity {
                         m.hideInfoWindow();
                     }
                 }
-                if (mPoiOverlay!=null){
+                //规划路线也要隐藏
+                if (mDrivingRouteOverlay!=null) {
+                    mDrivingRouteOverlay.removeFromMap();
+                }
+                if (mPoiOverlay!=null){//poi搜索
                     mPoiOverlay.removeFromMap();
                 }
+
             }
         });
 
@@ -362,11 +376,85 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onMarkerClick(Marker marker) {
                 Toast.makeText(MainActivity.this, "marker被点击", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "onMarkerClick: "+JSON.toJSONString(marker) );
+                if (mTap==3){
+                    Log.e(TAG, "onMarkerClick: singemarker3333" );
+                    //开始为单独地点搜索规划路线
+                    startGuHuaRoad(marker);
+
+
+
+                }
+
+
+
+
                 return false;
             }
         });
     }
+    DrivingRouteOverlay mDrivingRouteOverlay;
+    private void startGuHuaRoad(Marker marker) {
+        Log.e(TAG, "startGuHuaRoad: msinglemarker-->"+JSON.toJSONString(mSingeMarke) );
+        RouteSearch routeSearch = new RouteSearch(this);
 
+        routeSearch.setRouteSearchListener(new RouteSearch.OnRouteSearchListener() {
+            @Override
+            public void onBusRouteSearched(BusRouteResult busRouteResult, int i) {
+
+            }
+
+            @Override
+            public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int i) {
+                //解析result获取算路结果，可参考官方demo
+                mMap.clear();// 清理地图上的所有覆盖物
+                if (i == AMapException.CODE_AMAP_SUCCESS) {
+                    if (driveRouteResult != null && driveRouteResult.getPaths() != null) {
+                        if (driveRouteResult.getPaths().size() > 0) {
+                            Log.e(TAG, "onDriveRouteSearched: "+JSON.toJSONString(driveRouteResult) );
+                            final DrivePath drivePath = driveRouteResult.getPaths()
+                                    .get(0);
+                             mDrivingRouteOverlay = new DrivingRouteOverlay(
+                                    MainActivity.this, mMap, drivePath,
+                                    driveRouteResult.getStartPos(),
+                                    driveRouteResult.getTargetPos(), null);
+
+                            mDrivingRouteOverlay.setNodeIconVisibility(false);//设置节点marker是否显示
+                            mDrivingRouteOverlay.setIsColorfulline(true);//是否用颜色展示交通拥堵情况，默认true
+                            mDrivingRouteOverlay.removeFromMap();
+                            mDrivingRouteOverlay.addToMap();
+
+                            mMap.moveCamera(CameraUpdateFactory.zoomTo(16));
+                            mDrivingRouteOverlay.zoomToSpan();
+
+                        }
+                    }
+                }
+
+            }
+
+            @Override
+            public void onWalkRouteSearched(WalkRouteResult walkRouteResult, int i) {
+
+            }
+
+            @Override
+            public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
+
+            }
+        });//回调监听
+        //起点,当前定位点
+        LatLonPoint startPoint = new LatLonPoint(mLatitude, mLongitude);
+        //终点,点击的点
+        LatLonPoint endPoint = new LatLonPoint(mSingeMarke.getPosition().latitude, mSingeMarke.getPosition().longitude);
+        RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(startPoint, endPoint);
+
+        // fromAndTo包含路径规划的起点和终点，drivingMode表示驾车模式
+// 第三个参数表示途经点（最多支持16个），第四个参数表示避让区域（最多支持32个），第五个参数表示避让道路
+        RouteSearch.DriveRouteQuery query = new RouteSearch.DriveRouteQuery(fromAndTo, RouteSearch.DrivingDefault, null, null, "");
+
+        routeSearch.calculateDriveRouteAsyn(query);
+    }
 
 
     /**
