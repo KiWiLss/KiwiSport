@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     private double mLatitude;
     private double mLongitude;
     private int mTap;//区分点击的是哪种类型的图标
+    private boolean isFirstPlan=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -424,8 +425,9 @@ public class MainActivity extends AppCompatActivity {
                             mDrivingRouteOverlay.removeFromMap();
                             mDrivingRouteOverlay.addToMap();
 
-                            mMap.moveCamera(CameraUpdateFactory.zoomTo(16));
                             mDrivingRouteOverlay.zoomToSpan();
+
+
 
                         }
                     }
