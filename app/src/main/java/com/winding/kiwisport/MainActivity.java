@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                         if (i == AMapException.CODE_AMAP_SUCCESS&&poiItem!=null) {//正确返回
                             Log.e(TAG, "onPoiItemSearched: *****"+JSON.toJSONString(poiItem) );
                             mLv.setVisibility(View.GONE);
-                            mTap=3;
+                            mTap=3;//
                             //mMap.clear();// 清理之前的图标
                             LatLng latLng = new LatLng(poiItem.getEnter().getLatitude(), poiItem.getEnter().getLongitude());
                             //mSingeMarke.remove();
@@ -157,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!TextUtils.isEmpty(content)) {
                     //开始poi搜索,市搜索
                     startSearchCountry(content);
-                    autoSearch2(content);
+                    //autoSearch2(content);
                 }
                 return false;
             }
@@ -182,11 +182,6 @@ public class MainActivity extends AppCompatActivity {
                     SearchAdapter adapter = new SearchAdapter(MainActivity.this, list);
                     mLv.setAdapter(adapter);
                 }
-
-
-
-
-
             }
         });
         inputTips.requestInputtipsAsyn();
@@ -214,15 +209,16 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "onPoiSearched: pois--->" +pois.size()+"|||"+ JSON.toJSONString(pois));
                 List<SuggestionCity> cityList = poiResult.getSearchSuggestionCitys();
                 Log.e(TAG, "onPoiSearched: city--->"+JSON.toJSONString(cityList) );
+                //模糊搜索标识
+                mTap=2;
 
-
-                /*mMap.clear();// 清理之前的图标
+                mMap.clear();// 清理之前的图标
                 //展示搜索到的点
-                 mPoiOverlay = new PoiOverlay(getContext(), mMap, pois, getResources());
+                 mPoiOverlay = new PoiOverlay(MainActivity.this, mMap, pois, getResources());
                 mPoiOverlay.removeFromMap();
                 mPoiOverlay.addToMap();
 
-                mPoiOverlay.zoomToSpan();*/
+                mPoiOverlay.zoomToSpan();
 
 
             }
@@ -378,12 +374,11 @@ public class MainActivity extends AppCompatActivity {
             public boolean onMarkerClick(Marker marker) {
                 Toast.makeText(MainActivity.this, "marker被点击", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "onMarkerClick: "+JSON.toJSONString(marker) );
-                if (mTap==3){
-                    Log.e(TAG, "onMarkerClick: singemarker3333" );
+                if (mTap==3||mTap==2){
+                    Log.e(TAG, "onMarkerClick: singemarker3333" +marker.getTitle()+"||"+marker.getSnippet());
                     //开始为单独地点搜索规划路线
+
                     startGuHuaRoad(marker);
-
-
 
                 }
 
@@ -395,8 +390,35 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     DrivingRouteOverlay mDrivingRouteOverlay;
+    Marker mClickMarker;//当前点击图标的marker
+    String mClickTitle;
+    String mClickSnippet;
     private void startGuHuaRoad(Marker marker) {
-        Log.e(TAG, "startGuHuaRoad: msinglemarker-->"+JSON.toJSONString(mSingeMarke) );
+        if (TextUtils.isEmpty(marker.getTitle())){//起点不可点击
+            return;
+        }
+        //终点相同,不可点击
+        if (mClickMarker!=null){
+            if (mClickMarker.getPosition().latitude==marker.getPosition().latitude) {
+                if (mClickMarker.getPosition().longitude==marker.getPosition().longitude) {
+                    marker.setTitle(mClickTitle);
+                    marker.setSnippet(mClickSnippet);
+                    return;
+                }
+            }
+        }
+        mClickMarker=marker;
+        mClickTitle=marker.getTitle();
+        mClickSnippet=marker.getSnippet();
+        //起点,当前定位点
+        LatLonPoint startPoint = new LatLonPoint(mLatitude, mLongitude);
+        //终点,点击的点
+        LatLonPoint endPoint = new LatLonPoint(marker.getPosition().latitude, marker.getPosition().longitude);
+        RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(startPoint, endPoint);
+
+        Log.e(TAG, "startGuHuaRoad: msinglemarker-->"+JSON.toJSONString(mSingeMarke)
+        +"||"+JSON.toJSONString(marker));
+        Log.e(TAG, "startGuHuaRoad: ****"+marker.getTitle()+"|||"+marker.getSnippet() );
         RouteSearch routeSearch = new RouteSearch(this);
 
         routeSearch.setRouteSearchListener(new RouteSearch.OnRouteSearchListener() {
@@ -445,11 +467,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });//回调监听
-        //起点,当前定位点
-        LatLonPoint startPoint = new LatLonPoint(mLatitude, mLongitude);
-        //终点,点击的点
-        LatLonPoint endPoint = new LatLonPoint(mSingeMarke.getPosition().latitude, mSingeMarke.getPosition().longitude);
-        RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(startPoint, endPoint);
+
 
         // fromAndTo包含路径规划的起点和终点，drivingMode表示驾车模式
 // 第三个参数表示途经点（最多支持16个），第四个参数表示避让区域（最多支持32个），第五个参数表示避让道路
