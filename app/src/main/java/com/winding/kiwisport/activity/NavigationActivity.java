@@ -12,7 +12,6 @@ import com.amap.api.navi.AMapNaviListener;
 import com.amap.api.navi.AMapNaviView;
 import com.amap.api.navi.AMapNaviViewListener;
 import com.amap.api.navi.AMapNaviViewOptions;
-import com.amap.api.navi.INaviInfoCallback;
 import com.amap.api.navi.enums.NaviType;
 import com.amap.api.navi.model.AMapLaneInfo;
 import com.amap.api.navi.model.AMapNaviCameraInfo;
@@ -27,6 +26,7 @@ import com.amap.api.navi.model.NaviInfo;
 import com.amap.api.navi.model.NaviLatLng;
 import com.autonavi.tbt.TrafficFacilityInfo;
 import com.winding.kiwisport.R;
+import com.winding.kiwisport.TTSController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ import java.util.List;
  * Created by 刘少帅 on 2017/11/6
  */
 
-public class NavigationActivity extends AppCompatActivity implements INaviInfoCallback{
+public class NavigationActivity extends AppCompatActivity {
 
     public static final String TAG = "MMM";
     private AMapNaviView mMnv;
@@ -53,6 +53,7 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
     //存储算路终点的列表
     protected final List<NaviLatLng> eList = new ArrayList<>();
     protected List<NaviLatLng> mWayPointList;
+    private TTSController mTtsManager;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -129,6 +130,8 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
 
             @Override
             public void onGetNavigationText(String s) {
+                //获取移动时的数据
+                Log.e(TAG, "onGetNavigationText: "+s );
 
             }
 
@@ -168,7 +171,35 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
             }
 
             @Override
-            public void onNaviInfoUpdate(NaviInfo naviInfo) {
+            public void onNaviInfoUpdate(NaviInfo naviInfo) {//获取导航时的数据
+                //获取距离和时间
+                int pathRetainDistance = naviInfo.getPathRetainDistance();
+                int pathRetainTime = naviInfo.getPathRetainTime();
+                Log.e(TAG, "onNaviInfoUpdate: "+pathRetainDistance+"time"+pathRetainTime );
+                //获取指示图标类型
+                int iconType = naviInfo.getIconType();
+                switch (iconType) {
+                    case 0:
+                    case 1:
+                        //mIvDirection.setBackgroundResource(R.mipmap.wangshang);
+                        break;
+                    case 9:
+                        //mIvDirection.setBackgroundResource(R.mipmap.zhizou);
+                        break;
+                    case 2:
+                        //mIvDirection.setBackgroundResource(R.mipmap.zuozhuan);
+                        break;
+                    case 3:
+                        //mIvDirection.setBackgroundResource(R.mipmap.youzhuan);
+                        break;
+                    case 51:
+                        //mIvDirection.setBackgroundResource(R.mipmap.zuoxia);
+                        break;
+                    case 52:
+                        //mIvDirection.setBackgroundResource(R.mipmap.youxia);
+                        break;
+                }
+
 
             }
 
@@ -297,8 +328,10 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
             }
         });
         //实例化语音引擎
-//        mTtsManager = TTSController.getInstance(getApplicationContext());
-//        mTtsManager.init();
+        mTtsManager = TTSController.getInstance(this);
+        //mTtsManager.init();
+        //      启动语音引擎    监听
+        mAMapNavi.addAMapNaviListener(mTtsManager);
 //设置模拟导航的行车速度
         mAMapNavi.setEmulatorNaviSpeed(75);
         AMapNaviViewOptions aMapNaviViewOptions = new AMapNaviViewOptions();
@@ -316,7 +349,7 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
     protected void onResume() {
         super.onResume();
 
-       // mTtsManager.init();
+        //mTtsManager.init();
 
 
         mMnv.onResume();
@@ -328,7 +361,7 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
 
 
         mMnv.onPause();
-        //mTtsManager.stopSpeaking();
+        mTtsManager.stopSpeaking();
     }
 
     @Override
@@ -337,70 +370,72 @@ public class NavigationActivity extends AppCompatActivity implements INaviInfoCa
         mMnv.onDestroy();
         mAMapNavi.stopNavi();
         mAMapNavi.destroy();
-        //mTtsManager.destroy();
+        mTtsManager.destroy();
     }
 
-    /**
-     * 导航初始化失败的回调
-     */
-    @Override
-    public void onInitNaviFailure() {
-
-    }
-    /**
-     * 导航播报信息回调函数。
-     * @param // 语音播报文字
-     **/
-    @Override
-    public void onGetNavigationText(String s) {
-        Log.e(TAG, "onGetNavigationText: "+s);
-    }
-    /**
-     * 当GPS位置有更新时的回调函数。
-     *@param //当前自车坐标位置
-     **/
-    @Override
-    public void onLocationChange(AMapNaviLocation aMapNaviLocation) {
-
-    }
-
-    /**到达目的地后回调函数。
-     * @param b
-     */
-    @Override
-    public void onArriveDestination(boolean b) {
-
-    }
-    /**
-     * 启动导航后的回调函数
-     **/
-    @Override
-    public void onStartNavi(int i) {
-
-    }
-    /**
-     * 算路成功回调
-     * @param // 路线id数组
-     */
-    @Override
-    public void onCalculateRouteSuccess(int[] ints) {
-
-        //mAMapNavi.startNavi(NaviType.EMULATOR);
-    }
-    /**
-     * 步行或者驾车路径规划失败后的回调函数
-     **/
-    @Override
-    public void onCalculateRouteFailure(int i) {
-
-    }
-    /**
-     * 停止语音回调，收到此回调后用户可以停止播放语音
-     **/
-    @Override
-    public void onStopSpeaking() {
-
-    }
+//    /**
+//     * 导航初始化失败的回调
+//     */
+//    @Override
+//    public void onInitNaviFailure() {
+//
+//    }
+//    /**
+//     * 导航播报信息回调函数。
+//     * @param // 语音播报文字
+//     **/
+//    @Override
+//    public void onGetNavigationText(String s) {
+//        Log.e(TAG, "onGetNavigationText: "+s);
+//
+//
+//    }
+//    /**
+//     * 当GPS位置有更新时的回调函数。
+//     *@param //当前自车坐标位置
+//     **/
+//    @Override
+//    public void onLocationChange(AMapNaviLocation aMapNaviLocation) {
+//
+//    }
+//
+//    /**到达目的地后回调函数。
+//     * @param b
+//     */
+//    @Override
+//    public void onArriveDestination(boolean b) {
+//
+//    }
+//    /**
+//     * 启动导航后的回调函数
+//     **/
+//    @Override
+//    public void onStartNavi(int i) {
+//
+//    }
+//    /**
+//     * 算路成功回调
+//     * @param // 路线id数组
+//     */
+//    @Override
+//    public void onCalculateRouteSuccess(int[] ints) {
+//
+//        //mAMapNavi.startNavi(NaviType.EMULATOR);
+//    }
+//    /**
+//     * 步行或者驾车路径规划失败后的回调函数
+//     **/
+//    @Override
+//    public void onCalculateRouteFailure(int i) {
+//
+//    }
+//    /**
+//     * 停止语音回调，收到此回调后用户可以停止播放语音
+//     **/
+//    @Override
+//    public void onStopSpeaking() {
+//
+//    }
 
     /**开始导航
      * @param view
