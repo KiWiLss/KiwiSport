@@ -1,5 +1,6 @@
 package com.winding.kiwisport;
 
+import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -51,6 +52,7 @@ import com.amap.api.services.route.DriveRouteResult;
 import com.amap.api.services.route.RideRouteResult;
 import com.amap.api.services.route.RouteSearch;
 import com.amap.api.services.route.WalkRouteResult;
+import com.winding.kiwisport.activity.NavigationActivity;
 import com.winding.kiwisport.utils.Utils;
 
 import java.util.ArrayList;
@@ -155,6 +157,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "onEditorAction: "+content+"|||"+keyEvent.getAction() +"actionId"+i);
 
                 if (!TextUtils.isEmpty(content)) {
+                    if (TextUtils.equals(content,"下一个")){
+                        //进入导航页
+                        startActivity(new Intent(MainActivity.this, NavigationActivity.class));
+                        return false;
+                    }
                     //开始poi搜索,市搜索
                     startSearchCountry(content);
                     //autoSearch2(content);

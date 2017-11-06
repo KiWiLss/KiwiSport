@@ -56,8 +56,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".activity.NavigationActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"/>
+
         <!--定位服务-->
         <service android:name="com.amap.api.location.APSService"></service>
+
+
     </application>
 
 </manifest>

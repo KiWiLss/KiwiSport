@@ -42,11 +42,13 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
     //3D地图so及jar
-    compile 'com.amap.api:3dmap:latest.integration'
+    //compile 'com.amap.api:3dmap:latest.integration'
     //定位功能
     compile 'com.amap.api:location:latest.integration'
     //搜索功能
     compile 'com.amap.api:search:latest.integration'
+    //导航
+    compile 'com.amap.api:navi-3dmap:latest.integration'
 
     compile 'com.alibaba:fastjson:1.2.35'
 }
