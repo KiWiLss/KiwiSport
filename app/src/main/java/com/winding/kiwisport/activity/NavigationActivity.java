@@ -281,6 +281,8 @@ public class NavigationActivity extends AppCompatActivity {
 
             }
         });
+
+
         mMnv.setAMapNaviViewListener(new AMapNaviViewListener() {
             @Override
             public void onNaviSetting() {
