@@ -40,7 +40,7 @@ public class TTSController implements AMapNaviListener {
     /**
      * 请替换您自己申请的ID。  594a42dd
      */
-    public static final String appId = "594a42dd";
+    public static final String appId = "5a05025f";
 
     public static TTSController ttsManager;
     private Context mContext;

@@ -331,7 +331,7 @@ public class NavigationActivity extends AppCompatActivity {
         });
         //实例化语音引擎
         mTtsManager = TTSController.getInstance(this);
-        //mTtsManager.init();
+        mTtsManager.init();
         //      启动语音引擎    监听
         mAMapNavi.addAMapNaviListener(mTtsManager);
 //设置模拟导航的行车速度
