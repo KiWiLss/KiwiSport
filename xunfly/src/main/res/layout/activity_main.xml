@@ -16,8 +16,13 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="语音识别"
+        android:text="在线语音识别"
         android:onClick="soundJudge"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="离线语音识别"
+        android:onClick="offline"/>
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -27,6 +32,6 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="取消"
-        android:onClick="cancel"/>
+        android:text="语音合成"
+        android:onClick="synthesisListener"/>
 </LinearLayout>

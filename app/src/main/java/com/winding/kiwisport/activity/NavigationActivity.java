@@ -199,8 +199,6 @@ public class NavigationActivity extends AppCompatActivity {
                         //mIvDirection.setBackgroundResource(R.mipmap.youxia);
                         break;
                 }
-
-
             }
 
             @Override
@@ -336,6 +334,7 @@ public class NavigationActivity extends AppCompatActivity {
         mAMapNavi.addAMapNaviListener(mTtsManager);
 //设置模拟导航的行车速度
         mAMapNavi.setEmulatorNaviSpeed(75);
+
         AMapNaviViewOptions aMapNaviViewOptions = new AMapNaviViewOptions();
         aMapNaviViewOptions.setCrossDisplayShow(false);
         aMapNaviViewOptions.setRealCrossDisplayShow(false);

@@ -1,5 +1,6 @@
 package com.magicsoft.xunfly;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
@@ -20,6 +21,7 @@ import com.iflytek.cloud.SpeechUtility;
 import com.iflytek.cloud.ui.RecognizerDialog;
 import com.iflytek.cloud.ui.RecognizerDialogListener;
 import com.iflytek.sunflower.FlowerCollector;
+import com.magicsoft.xunfly.activity.SynthesisActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private String mCloudGrammar = null;
     //语音引擎类型
     String mEngineType = SpeechConstant.TYPE_CLOUD;//在线识别
+    String mEngineType2 = SpeechConstant.TYPE_LOCAL;//离线识别
 
     // 语法、词典临时变量
     String mContent;
@@ -57,6 +60,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String GRAMMAR_TYPE_ABNF = "abnf";
     private static final String GRAMMAR_TYPE_BNF = "bnf";
 
+    /**在线语音识别
+     * @param view
+     */
     public void soundJudge(View view) {
         //初始化识别对象
         mAsr = SpeechRecognizer.createRecognizer(this, mInitListener);
@@ -336,5 +342,18 @@ public class MainActivity extends AppCompatActivity {
     public void stop(View view) {
         mAsr.stopListening();
         showTip("停止识别");
+    }
+
+    /**离线语音合成
+     * @param view
+     */
+    public void offline(View view) {
+
+
+    }
+
+
+    public void synthesisListener(View view) {
+        startActivity(new Intent(this, SynthesisActivity.class));
     }
 }

@@ -249,7 +249,7 @@ public class FaceUtil {
 	
 	/**
 	 * 保存Bitmap至本地
-	 * @param Bitmap
+	 * @param //Bitmap
 	 */
 	public static void saveBitmapToFile(Context context,Bitmap bmp){
 		String file_path = getImagePath(context);
