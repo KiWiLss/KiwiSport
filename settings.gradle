@@ -1,1 +1,1 @@
-include ':app', ':xunfly', ':speechDemo'
+include ':app', ':xunfly', ':speechDemo', ':smscollect'
