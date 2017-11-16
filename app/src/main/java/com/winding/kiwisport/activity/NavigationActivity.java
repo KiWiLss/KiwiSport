@@ -241,7 +241,8 @@ public class NavigationActivity extends AppCompatActivity {
                 //显示路径或开启导航
 
                 //onCalculateRouteSuccess(ints);
-                mAMapNavi.startNavi(NaviType.EMULATOR);
+                //mAMapNavi.startNavi(NaviType.EMULATOR);//模拟导航
+                mAMapNavi.startNavi(NaviType.GPS);//实际导航
             }
 
             @Override
@@ -332,6 +333,7 @@ public class NavigationActivity extends AppCompatActivity {
         mTtsManager.init();
         //      启动语音引擎    监听
         mAMapNavi.addAMapNaviListener(mTtsManager);
+
 //设置模拟导航的行车速度
         mAMapNavi.setEmulatorNaviSpeed(75);
 
